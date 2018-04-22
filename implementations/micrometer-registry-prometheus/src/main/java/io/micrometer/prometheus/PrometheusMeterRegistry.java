@@ -16,6 +16,7 @@
 package io.micrometer.prometheus;
 
 import io.micrometer.core.instrument.*;
+import io.micrometer.core.instrument.Meter.Type;
 import io.micrometer.core.instrument.cumulative.CumulativeFunctionCounter;
 import io.micrometer.core.instrument.cumulative.CumulativeFunctionTimer;
 import io.micrometer.core.instrument.distribution.CountAtBucket;
@@ -369,4 +370,21 @@ public class PrometheusMeterRegistry extends MeterRegistry {
                 .build()
                 .merge(DistributionStatisticConfig.DEFAULT);
     }
+
+    @Override
+    public void deregister(Meter meter) {
+        Type type = meter.getId().getType();
+        
+        switch (type) {
+            case COUNTER:
+                MicrometerCollector collector = this.collectorMap.remove(getConventionName(meter.getId()));
+                this.registry.unregister(collector);
+                break;
+            default:
+                throw new IllegalArgumentException("Not supported yet");
+        }
+        
+    }
+    
+    
 }
