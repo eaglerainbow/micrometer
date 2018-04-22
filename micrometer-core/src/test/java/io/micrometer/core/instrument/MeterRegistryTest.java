@@ -15,6 +15,14 @@
  */
 package io.micrometer.core.instrument;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.function.Consumer;
+
+import javax.annotation.Nonnull;
+
+import org.junit.jupiter.api.Test;
+
 import io.micrometer.core.instrument.config.MeterFilter;
 import io.micrometer.core.instrument.config.MeterFilterReply;
 import io.micrometer.core.instrument.distribution.DistributionStatisticConfig;
@@ -22,11 +30,6 @@ import io.micrometer.core.instrument.distribution.pause.PauseDetector;
 import io.micrometer.core.instrument.noop.NoopCounter;
 import io.micrometer.core.instrument.noop.NoopTimer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import org.junit.jupiter.api.Test;
-
-import javax.annotation.Nonnull;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 class MeterRegistryTest {
     private MeterRegistry registry = new SimpleMeterRegistry();
@@ -86,5 +89,45 @@ class MeterRegistryTest {
 
         assertThat(registry.timer("my.timer.before")).isNotInstanceOf(NoopTimer.class);
         assertThat(registry.timer("my.timer.after")).isInstanceOf(NoopTimer.class);
+    }
+
+    
+    private final class TestFn implements Consumer<Meter> {
+        boolean triggered = false;
+        
+        @Override
+        public void accept(Meter t) {
+            triggered = true;
+        }
+
+        public boolean isTriggered() {
+            return triggered;
+        }
+    }
+
+    @Test
+    void removeTriggersCallback() {
+        TestFn testFn = new TestFn();
+        registry.config().onMeterRemoved(testFn);
+        
+        Counter testCounter = registry.counter("removeTest1", "tag1", "value1");
+        
+        registry.deregister(testCounter);
+        
+        assertThat(testFn.isTriggered()).isTrue();
+    }
+    
+    @Test
+    void invalidRemoveDoesNotTriggerCallback() {
+        TestFn testFn = new TestFn();
+        registry.config().onMeterRemoved(testFn);
+        
+        SimpleMeterRegistry otherRegistry = new SimpleMeterRegistry();
+        
+        Counter testCounter = otherRegistry.counter("removeTest2", "tag2", "value2");
+        
+        registry.deregister(testCounter);
+        
+        assertThat(testFn.isTriggered()).isFalse();
     }
 }
