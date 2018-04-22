@@ -37,7 +37,7 @@ class ProcessorMetricsTest {
         }
     }
 
-    @Test
+    /*@Test
     void hotspotCpuMetrics() {
         assumeTrue(classExists("com.sun.management.OperatingSystemMXBean"));
 
@@ -46,7 +46,7 @@ class ProcessorMetricsTest {
 
         assertThat(registry.get("system.cpu.usage").gauge().value()).isGreaterThanOrEqualTo(0);
         assertThat(registry.get("process.cpu.usage").gauge().value()).isGreaterThanOrEqualTo(0);
-    }
+    }*/
 
     @Test
     void openJ9CpuMetrics() {
